@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+
+  <!-- 领袖与传道者：期望偏移 +2 -> -2（期望降低两级，最低压到最低档） -->
+  <Operation Class="PatchOperationReplace">
+    <xpath>/Defs/PreceptDef[defName="IdeoRole_Leader" or defName="IdeoRole_Moralist"]/expectationsOffset</xpath>
+    <value>
+      <expectationsOffset>-2</expectationsOffset>
+    </value>
+  </Operation>
+
+  <!-- 传道者：教化能力系数 2 -> 3（即在原有 x200% 基础上再乘 150%，总计 x300%） -->
+  <Operation Class="PatchOperationReplace">
+    <xpath>/Defs/PreceptDef[defName="IdeoRole_Moralist"]/convertPowerFactor</xpath>
+    <value>
+      <convertPowerFactor>3</convertPowerFactor>
+    </value>
+  </Operation>
+
+  <!-- 传道者：文化传播系数 x150%（主动向异文化者传教的几率） -->
+  <Operation Class="PatchOperationAdd">
+    <xpath>/Defs/PreceptDef[defName="IdeoRole_Moralist"]</xpath>
+    <value>
+      <roleEffects>
+        <li Class="RoleEffect_PawnStatFactor">
+          <statDef>SocialIdeoSpreadFrequencyFactor</statDef>
+          <modifier>1.5</modifier>
+        </li>
+      </roleEffects>
+    </value>
+  </Operation>
+
+</Patch>

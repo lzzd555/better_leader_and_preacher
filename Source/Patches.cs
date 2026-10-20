@@ -1,0 +1,195 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using HarmonyLib;
+using RimWorld;
+using Verse;
+using UnityEngine;
+
+namespace BLAP
+{
+    /// <summary>领袖坚韧：疼痛 x0.9，受到伤害 x0.8。</summary>
+    [HarmonyPatch(typeof(HediffSet), "get_PainTotal")]
+    public static class Patch_LeaderPain
+    {
+        public static void Postfix(HediffSet __instance, ref float __result)
+        {
+            if (__result <= 0f) return;
+            var pawn = __instance.pawn;
+            if (pawn == null || !RoleHelper.HoldsLeader(pawn)) return;
+            __result *= BLAPSettings.LeaderPainFactor;
+        }
+    }
+
+    [HarmonyPatch(typeof(HediffSet), nameof(HediffSet.FactorForDamage))]
+    public static class Patch_LeaderToughness
+    {
+        public static void Postfix(HediffSet __instance, ref float __result)
+        {
+            var pawn = __instance.pawn;
+            if (pawn == null || !RoleHelper.HoldsLeader(pawn)) return;
+            __result *= BLAPSettings.LeaderDamageFactor;
+        }
+    }
+
+    /// <summary>兼任：被兼任专家的 RoleEffect_PawnStatOffset / PawnStatFactor 参与属性计算。
+    /// 每个属性首次实际生效时打一条日志，便于游戏内确认。</summary>
+    [HarmonyPatch(typeof(StatWorker), "GetValueUnfinalized")]
+    public static class Patch_EmulationStats
+    {
+        // StatWorker.stat 在 1.7 没有公开访问器，用 Harmony 的字段引用读取
+        private static readonly AccessTools.FieldRef<StatWorker, StatDef> StatOf =
+            AccessTools.FieldRefAccess<StatWorker, StatDef>("stat");
+
+        private static readonly HashSet<string> LoggedApplications = new HashSet<string>();
+
+        public static void Postfix(StatWorker __instance, StatRequest req, ref float __result)
+        {
+            var pawn = req.Thing as Pawn;
+            if (pawn == null) return;
+            var statDef = StatOf(__instance);
+            if (statDef == null) return;
+            var emulated = RoleHelper.EmulatedRole(pawn);
+            if (emulated?.def?.roleEffects == null) return;
+            bool changed = false;
+            foreach (var effect in emulated.def.roleEffects)
+            {
+                if (effect is RoleEffect_PawnStatOffset offset && offset.statDef == statDef)
+                {
+                    __result += offset.modifier;
+                    changed = true;
+                }
+                else if (effect is RoleEffect_PawnStatFactor factor && factor.statDef == statDef)
+                {
+                    __result *= factor.modifier;
+                    changed = true;
+                }
+            }
+            if (changed && LoggedApplications.Add($"{pawn.thingIDNumber}:{statDef.defName}"))
+            {
+                Log.Message($"[BetterLeaderAndPreacher] 兼任属性生效：{pawn.LabelShortCap} 的 {statDef.defName} 应用后未终值 = {__result}");
+            }
+        }
+    }
+
+    /// <summary>兼任：被兼任专家的 RoleEffect_ProductionQualityOffset 参与品质判定。</summary>
+    [HarmonyPatch(typeof(QualityUtility), nameof(QualityUtility.GenerateQualityCreatedByPawn),
+        new[] { typeof(Pawn), typeof(SkillDef), typeof(bool) })]
+    public static class Patch_EmulationQuality
+    {
+        public static void Postfix(Pawn pawn, ref QualityCategory __result)
+        {
+            var emulated = RoleHelper.EmulatedRole(pawn);
+            if (emulated?.def?.roleEffects == null) return;
+            foreach (var effect in emulated.def.roleEffects)
+            {
+                if (effect is RoleEffect_ProductionQualityOffset qualityOffset)
+                {
+                    int value = Mathf.Min((int)__result + qualityOffset.offset, (int)QualityCategory.Legendary);
+                    __result = (QualityCategory)value;
+                }
+            }
+        }
+    }
+
+    /// <summary>兼任：被兼任专家的 grantedAbilities 出现在能力列表中。
+    /// 注意不能用 Precept_RoleMulti.AbilitiesFor(pawn)——它只对 chosenPawns 里真正指派的 pawn 返回缓存，
+    /// 未指派的兼任者返回 null；这里按 def 自建实例并缓存（保证冷却状态跨查询稳定）。
+    /// 同时清洗列表中 def 已失效的坏条目（历史版本或卸掉的 mod 在存档里留下的 null 能力）。</summary>
+    [HarmonyPatch(typeof(Pawn_AbilityTracker), "get_AllAbilitiesForReading")]
+    public static class Patch_EmulationAbilities
+    {
+        private static readonly AccessTools.FieldRef<Pawn_AbilityTracker, List<Ability>> AbilitiesField =
+            AccessTools.FieldRefAccess<Pawn_AbilityTracker, List<Ability>>("abilities");
+
+        // pawn.thingIDNumber -> (兼任的 defName, 该职位各能力 def 的活动实例)
+        private static readonly Dictionary<long, KeyValuePair<string, Dictionary<AbilityDef, Ability>>> AbilityCache =
+            new Dictionary<long, KeyValuePair<string, Dictionary<AbilityDef, Ability>>>();
+
+        public static bool IsBroken(Ability a) => a == null || a.def == null;
+
+        public static void Postfix(Pawn_AbilityTracker __instance, ref List<Ability> __result)
+        {
+            try
+            {
+                var pawn = __instance.pawn;
+                if (pawn == null || __result == null) return;
+
+                // 从 tracker 内部列表清除坏条目，其他消费方（AbilityTick 等）不再踩雷
+                var abilities = AbilitiesField(__instance);
+                if (abilities != null && abilities.Any(IsBroken))
+                    abilities.RemoveAll(IsBroken);
+                if (__result.Any(IsBroken))
+                    __result.RemoveAll(IsBroken);
+
+                CleanupIfRoleLost(pawn);
+                var emulated = RoleHelper.EmulatedRole(pawn);
+                if (emulated == null)
+                {
+                    AbilityCache.Remove(pawn.thingIDNumber);
+                    return;
+                }
+
+                if (!AbilityCache.TryGetValue(pawn.thingIDNumber, out var cached) || cached.Key != emulated.def.defName)
+                {
+                    var fresh = new Dictionary<AbilityDef, Ability>();
+                    foreach (var def in emulated.def.grantedAbilities)
+                    {
+                        if (def == null) continue;
+                        if (def.requiredMemes != null && pawn.Ideo != null &&
+                            !def.requiredMemes.All(m => pawn.Ideo.memes.Contains(m))) continue;
+                        fresh[def] = AbilityUtility.MakeAbility(def, pawn, emulated);
+                    }
+                    cached = new KeyValuePair<string, Dictionary<AbilityDef, Ability>>(emulated.def.defName, fresh);
+                    AbilityCache[pawn.thingIDNumber] = cached;
+                }
+                foreach (var ability in cached.Value.Values)
+                {
+                    if (__result.Any(a => !IsBroken(a) && a.def == ability.def)) continue;
+                    __result.Add(ability);
+                }
+            }
+            catch (Exception e)
+            {
+                // gizmo 渲染高频调用，任何异常都会炸掉整个命令栏；兜底并留痕
+                Log.ErrorOnce($"[BetterLeaderAndPreacher] EmulationAbilities 补丁异常：{e.Message}", 73195002);
+            }
+        }
+
+        private static void CleanupIfRoleLost(Pawn pawn)
+        {
+            var marker = RoleHelper.EmulationMarker(pawn);
+            if (marker != null && !RoleHelper.HoldsLeaderOrMoralist(pawn))
+            {
+                pawn.health.RemoveHediff(marker);
+                AbilityCache.Remove(pawn.thingIDNumber);
+            }
+        }
+    }
+
+    /// <summary>职位被卸任时清理兼任标记。1.7 中 Precept_Role.Unassign 是抽象方法，
+    /// 只能补丁两个具体子类的实现。</summary>
+    [HarmonyPatch(typeof(Precept_RoleSingle), nameof(Precept_RoleSingle.Unassign))]
+    public static class Patch_EmulationCleanupOnUnassignSingle
+    {
+        public static void Postfix(Pawn p) => EmulationCleanup.Cleanup(p);
+    }
+
+    [HarmonyPatch(typeof(Precept_RoleMulti), nameof(Precept_RoleMulti.Unassign))]
+    public static class Patch_EmulationCleanupOnUnassignMulti
+    {
+        public static void Postfix(Pawn p) => EmulationCleanup.Cleanup(p);
+    }
+
+    internal static class EmulationCleanup
+    {
+        public static void Cleanup(Pawn p)
+        {
+            var marker = RoleHelper.EmulationMarker(p);
+            if (marker != null && !RoleHelper.HoldsLeaderOrMoralist(p))
+            {
+                p.health.RemoveHediff(marker);
+            }
+        }
+    }
+}

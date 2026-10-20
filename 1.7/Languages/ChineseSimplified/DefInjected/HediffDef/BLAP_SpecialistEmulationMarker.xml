@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <BLAP_SpecialistEmulationMarker.label>兼任：专家</BLAP_SpecialistEmulationMarker.label>
+  <BLAP_SpecialistEmulationMarker.description>此人正在兼任某个专家职位，获得其数值补正与能力。</BLAP_SpecialistEmulationMarker.description>
+</LanguageData>

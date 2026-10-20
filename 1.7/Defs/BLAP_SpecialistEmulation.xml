@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- 兼任标记：记录当前兼任的专家 def 与切换时间，随 pawn 存档。
+       触发方式为 C# 注入的 gizmo 按钮（见 EmulationGizmo.cs），不走能力施法系统。 -->
+  <HediffDef>
+    <defName>BLAP_SpecialistEmulationMarker</defName>
+    <label>specialist emulation</label>
+    <description>This person is emulating the powers of a specialist role.</description>
+    <hediffClass>BLAP.Hediff_SpecialistEmulationMarker</hediffClass>
+    <isBad>false</isBad>
+    <tendable>false</tendable>
+    <maxSeverity>1</maxSeverity>
+    <initialSeverity>1</initialSeverity>
+    <scenarioCanAdd>false</scenarioCanAdd>
+  </HediffDef>
+
+</Defs>

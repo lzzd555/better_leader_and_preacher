@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <BLAP_EmulateGizmoLabel>Emulate specialist</BLAP_EmulateGizmoLabel>
+  <BLAP_EmulateGizmoDesc>Choose a specialist role from your ideoligion to emulate. You gain that role's stat modifiers and abilities. Work restrictions and apparel requirements are not inherited, and no specialist slot is occupied. Any change (switching or dropping emulation) has a 7-day cooldown.</BLAP_EmulateGizmoDesc>
+  <BLAP_EmulateCooldown>On cooldown: {0} left</BLAP_EmulateCooldown>
+    <BLAP_DevResetCooldown>Reset emulation cooldown (DEV)</BLAP_DevResetCooldown>
+  <BLAP_DevResetCooldownDesc>Immediately clears this pawn's emulation cooldown (debug only).</BLAP_DevResetCooldownDesc>
+<BLAP_EmulateMenuTitle>Choose a specialist role to emulate</BLAP_EmulateMenuTitle>
+  <BLAP_EmulateOption>Emulate {0}</BLAP_EmulateOption>
+  <BLAP_EmulateCurrent>Emulate {0} (current)</BLAP_EmulateCurrent>
+  <BLAP_EmulateNone>No emulation</BLAP_EmulateNone>
+  <BLAP_EmulateStarted>{0} now emulates the {1}.</BLAP_EmulateStarted>
+  <BLAP_EmulateEnded>{0} no longer emulates the {1}.</BLAP_EmulateEnded>
+  <BLAP_EmulateNoRoles>No emulatable specialist role exists in this ideoligion.</BLAP_EmulateNoRoles>
+  <BLAP_EmulationHediffLabel>Emulating {0}</BLAP_EmulationHediffLabel>
+  <BLAP_EmulationHediffDesc>This person emulates the stat bonuses and abilities of the {0} role.</BLAP_EmulationHediffDesc>
+  <RoleExpectationOffset>Shifted by {0} levels.</RoleExpectationOffset>
+</LanguageData>

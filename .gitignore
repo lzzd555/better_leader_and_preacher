@@ -1,0 +1,15 @@
+# 构建中间产物
+Source/bin/
+Source/obj/
+*.pdb
+*.runtimeconfig.json
+
+# IDE / 工具
+.vs/
+.idea/
+*.user
+*.suo
+
+# 系统
+Thumbs.db
+.DS_Store
