@@ -93,10 +93,11 @@ namespace BLAP
                 foreach (var effect in emulated.def.roleEffects)
                 {
                     string value = null;
+                    // 与原版角色加成行相同的格式化（偏移/系数各用一组 ToStringNumberStyle）
                     if (effect is RoleEffect_PawnStatOffset offset && offset.statDef == statDef)
-                        value = offset.modifier.ToString("+0.##;-0.##");
+                        value = __instance.ValueToString(offset.modifier, false, (Verse.ToStringNumberSense)3);
                     else if (effect is RoleEffect_PawnStatFactor factor && factor.statDef == statDef)
-                        value = "x" + factor.modifier.ToString("0.##");
+                        value = __instance.ValueToString(factor.modifier, false, (Verse.ToStringNumberSense)2);
                     if (value != null)
                     {
                         sb.AppendInNewLine(whitespace + "BLAP_EmulationStatLine"
@@ -172,13 +173,21 @@ namespace BLAP
                 if (!AbilityCache.TryGetValue(pawn.thingIDNumber, out var cached) || cached.Key != emulated.def.defName)
                 {
                     var fresh = new Dictionary<AbilityDef, Ability>();
+                    var skipped = new List<string>();
                     foreach (var def in emulated.def.grantedAbilities)
                     {
                         if (def == null) continue;
                         if (def.requiredMemes != null && pawn.Ideo != null &&
-                            !def.requiredMemes.All(m => pawn.Ideo.memes.Contains(m))) continue;
+                            !def.requiredMemes.All(m => pawn.Ideo.memes.Contains(m)))
+                        {
+                            skipped.Add(def.defName + "(meme不符)");
+                            continue;
+                        }
                         fresh[def] = AbilityUtility.MakeAbility(def, pawn, emulated);
                     }
+                    Log.Message($"[BetterLeaderAndPreacher] 兼任能力构建：{emulated.def.defName} 授予 " +
+                                $"{fresh.Count} 项（{string.Join(", ", fresh.Keys.Select(d => d.defName))}）" +
+                                (skipped.Count > 0 ? $"，跳过 {skipped.Count} 项（{string.Join(", ", skipped)}）" : ""));
                     cached = new KeyValuePair<string, Dictionary<AbilityDef, Ability>>(emulated.def.defName, fresh);
                     AbilityCache[pawn.thingIDNumber] = cached;
                 }
