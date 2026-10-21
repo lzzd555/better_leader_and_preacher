@@ -19,4 +19,6 @@
   <BLAP_EmulationHediffLabel>兼任：{0}</BLAP_EmulationHediffLabel>
   <BLAP_EmulationHediffDesc>此人兼任{0}职位，获得其数值补正与能力。</BLAP_EmulationHediffDesc>
   <RoleExpectationOffset>期望偏移 {0} 级。</RoleExpectationOffset>
+  <RoleRaisedExpectation>担任{0}使此人的期望发生了偏移。</RoleRaisedExpectation>
+  <RoleRaisedExpectationGracePeriod>{1}后，{0}的期望将发生偏移。</RoleRaisedExpectationGracePeriod>
 </LanguageData>
