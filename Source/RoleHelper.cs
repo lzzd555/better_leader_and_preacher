@@ -74,6 +74,18 @@ namespace BLAP
             return result;
         }
 
+        /// <summary>文化里全部专家职位（含未激活），供菜单展示与诊断。</summary>
+        public static List<Precept_RoleMulti> AllSpecialistRoles(Pawn pawn)
+        {
+            var result = new List<Precept_RoleMulti>();
+            if (pawn?.Ideo == null) return result;
+            foreach (var role in pawn.Ideo.RolesListForReading)
+            {
+                if (role is Precept_RoleMulti multi) result.Add(multi);
+            }
+            return result;
+        }
+
         public static void SetEmulation(Pawn pawn, Precept_RoleMulti role)
         {
             var marker = EmulationMarker(pawn);

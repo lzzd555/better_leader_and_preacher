@@ -73,17 +73,30 @@ namespace BLAP
         {
             var options = new List<FloatMenuOption>();
             var current = RoleHelper.EmulatedRole(pawn);
-            foreach (var role in RoleHelper.EmulatableRoles(pawn))
+            int totalRoles = pawn.Ideo?.RolesListForReading?.Count ?? 0;
+            var specialists = RoleHelper.AllSpecialistRoles(pawn);
+            Log.Message($"[BetterLeaderAndPreacher] 兼任菜单：文化职位共 {totalRoles} 个，专家职位 {specialists.Count} 个" +
+                        $"（激活 {specialists.Count(r => r.Active)}，当前兼任：{current?.def.defName ?? "无"}）");
+            foreach (var role in specialists)
             {
                 var captured = role;
                 bool isCurrent = role == current;
                 string label = isCurrent
                     ? "BLAP_EmulateCurrent".Translate(role.LabelForPawn(pawn))
                     : "BLAP_EmulateOption".Translate(role.LabelForPawn(pawn));
-                // 当前已兼任的选项灰显（重选无意义）
-                options.Add(isCurrent
-                    ? new FloatMenuOption(label, null)
-                    : new FloatMenuOption(label, () => ApplyChoice(pawn, captured)));
+                if (!role.Active)
+                {
+                    // 未激活的专家也展示出来（灰显+标注），便于玩家看清为什么不能选
+                    options.Add(new FloatMenuOption(label + " " + "BLAP_EmulateInactive".Translate(), null));
+                }
+                else if (isCurrent)
+                {
+                    options.Add(new FloatMenuOption(label, null));
+                }
+                else
+                {
+                    options.Add(new FloatMenuOption(label, () => ApplyChoice(pawn, captured)));
+                }
             }
             // “无兼任”与其他选项并列；当前即无兼任时灰显
             bool noEmulation = current == null;
