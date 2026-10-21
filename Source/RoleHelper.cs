@@ -51,42 +51,51 @@ namespace BLAP
         }
 
         /// <summary>当前兼任的专家 precept；已失效（文化变革后不存在）时返回 null。</summary>
-        public static Precept_RoleMulti EmulatedRole(Pawn pawn)
+        /// <summary>当前兼任的职位；已失效（文化变革后不存在）时返回 null。
+        /// 兼任对象是除领袖/传道者外的任意职位——模组专家（如 VIE 护士、AlphaMemes 角色）
+        /// 很多是 Precept_RoleSingle 单持有者职位，不能按 RoleMulti 过滤。</summary>
+        public static Precept_Role EmulatedRole(Pawn pawn)
         {
             var marker = EmulationMarker(pawn);
             if (marker == null || marker.EmulatedRoleDef.NullOrEmpty()) return null;
             if (pawn.Ideo == null) return null;
             foreach (var role in pawn.Ideo.RolesListForReading)
             {
-                if (role is Precept_RoleMulti multi && role.def.defName == marker.EmulatedRoleDef) return multi;
+                if (role.def.defName == marker.EmulatedRoleDef && !IsExcludedRole(role)) return role;
             }
             return null;
         }
 
-        public static List<Precept_RoleMulti> EmulatableRoles(Pawn pawn)
+        /// <summary>领袖与传道者本身不可被兼任。</summary>
+        public static bool IsExcludedRole(Precept_Role role)
         {
-            var result = new List<Precept_RoleMulti>();
+            return EmulationSourceRoles.Contains(role.def.defName);
+        }
+
+        public static List<Precept_Role> EmulatableRoles(Pawn pawn)
+        {
+            var result = new List<Precept_Role>();
             if (pawn?.Ideo == null) return result;
             foreach (var role in pawn.Ideo.RolesListForReading)
             {
-                if (role is Precept_RoleMulti multi && role.Active) result.Add(multi);
+                if (!IsExcludedRole(role) && role.Active) result.Add(role);
             }
             return result;
         }
 
-        /// <summary>文化里全部专家职位（含未激活），供菜单展示与诊断。</summary>
-        public static List<Precept_RoleMulti> AllSpecialistRoles(Pawn pawn)
+        /// <summary>文化里全部可兼任职位（含未激活），供菜单展示与诊断。</summary>
+        public static List<Precept_Role> AllSpecialistRoles(Pawn pawn)
         {
-            var result = new List<Precept_RoleMulti>();
+            var result = new List<Precept_Role>();
             if (pawn?.Ideo == null) return result;
             foreach (var role in pawn.Ideo.RolesListForReading)
             {
-                if (role is Precept_RoleMulti multi) result.Add(multi);
+                if (!IsExcludedRole(role)) result.Add(role);
             }
             return result;
         }
 
-        public static void SetEmulation(Pawn pawn, Precept_RoleMulti role)
+        public static void SetEmulation(Pawn pawn, Precept_Role role)
         {
             var marker = EmulationMarker(pawn);
             if (role == null)

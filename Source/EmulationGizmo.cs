@@ -106,7 +106,7 @@ namespace BLAP
             Find.WindowStack.Add(new FloatMenu(options, "BLAP_EmulateMenuTitle".Translate()));
         }
 
-        private static void ApplyChoice(Pawn pawn, Precept_RoleMulti role)
+        private static void ApplyChoice(Pawn pawn, Precept_Role role)
         {
             if (role != null)
             {
