@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using HarmonyLib;
 using RimWorld;
 using Verse;
@@ -32,22 +33,25 @@ namespace BLAP
         }
     }
 
+    /// <summary>StatWorker.stat 私有字段的共享读取器。</summary>
+    internal static class BLAPStatAccess
+    {
+        public static readonly AccessTools.FieldRef<StatWorker, StatDef> StatOf =
+            AccessTools.FieldRefAccess<StatWorker, StatDef>("stat");
+    }
+
     /// <summary>兼任：被兼任专家的 RoleEffect_PawnStatOffset / PawnStatFactor 参与属性计算。
     /// 每个属性首次实际生效时打一条日志，便于游戏内确认。</summary>
     [HarmonyPatch(typeof(StatWorker), "GetValueUnfinalized")]
     public static class Patch_EmulationStats
     {
-        // StatWorker.stat 在 1.7 没有公开访问器，用 Harmony 的字段引用读取
-        private static readonly AccessTools.FieldRef<StatWorker, StatDef> StatOf =
-            AccessTools.FieldRefAccess<StatWorker, StatDef>("stat");
-
         private static readonly HashSet<string> LoggedApplications = new HashSet<string>();
 
         public static void Postfix(StatWorker __instance, StatRequest req, ref float __result)
         {
             var pawn = req.Thing as Pawn;
             if (pawn == null) return;
-            var statDef = StatOf(__instance);
+            var statDef = BLAPStatAccess.StatOf(__instance);
             if (statDef == null) return;
             var emulated = RoleHelper.EmulatedRole(pawn);
             if (emulated?.def?.roleEffects == null) return;
@@ -68,6 +72,41 @@ namespace BLAP
             if (changed && LoggedApplications.Add($"{pawn.thingIDNumber}:{statDef.defName}"))
             {
                 Log.Message($"[BetterLeaderAndPreacher] 兼任属性生效：{pawn.LabelShortCap} 的 {statDef.defName} 应用后未终值 = {__result}");
+            }
+        }
+    }
+
+    /// <summary>兼任：属性分解提示里显示被兼任职位的加成行（原版只解释 GetRole 的单职位）。</summary>
+    [HarmonyPatch(typeof(StatWorker), "GetOffsetsAndFactorsExplanation")]
+    public static class Patch_EmulationStatsExplanation
+    {
+        public static void Postfix(StatWorker __instance, StatRequest req, StringBuilder sb, float baseValue, string whitespace)
+        {
+            try
+            {
+                var pawn = req.Thing as Pawn;
+                if (pawn == null || sb == null) return;
+                var statDef = BLAPStatAccess.StatOf(__instance);
+                if (statDef == null) return;
+                var emulated = RoleHelper.EmulatedRole(pawn);
+                if (emulated?.def?.roleEffects == null) return;
+                foreach (var effect in emulated.def.roleEffects)
+                {
+                    string value = null;
+                    if (effect is RoleEffect_PawnStatOffset offset && offset.statDef == statDef)
+                        value = offset.modifier.ToString("+0.##;-0.##");
+                    else if (effect is RoleEffect_PawnStatFactor factor && factor.statDef == statDef)
+                        value = "x" + factor.modifier.ToString("0.##");
+                    if (value != null)
+                    {
+                        sb.AppendInNewLine(whitespace + "BLAP_EmulationStatLine"
+                            .Translate(emulated.LabelForPawn(pawn), value).Resolve());
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce($"[BetterLeaderAndPreacher] 属性解释补丁异常：{e.Message}", 73195003);
             }
         }
     }

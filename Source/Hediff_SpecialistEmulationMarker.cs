@@ -1,3 +1,4 @@
+using System.Linq;
 using RimWorld;
 using Verse;
 
@@ -28,6 +29,32 @@ namespace BLAP
 
         /// <summary>未兼任（已取消但保留冷却时间戳）时在健康页隐藏。</summary>
         public override bool Visible => !EmulatedRoleDef.NullOrEmpty() && base.Visible;
+
+        /// <summary>健康页提示里列出兼任获得的全部数值补正与能力。</summary>
+        public override string TipStringExtra
+        {
+            get
+            {
+                var precept = EmulatedPrecept;
+                if (precept == null) return null;
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine("BLAP_EmulationBonusHeader".Translate());
+                if (precept.def.roleEffects != null)
+                {
+                    foreach (var effect in precept.def.roleEffects)
+                    {
+                        string line = effect?.Label(pawn, precept);
+                        if (!line.NullOrEmpty()) sb.AppendLine("  - " + line);
+                    }
+                }
+                if (precept.def.grantedAbilities != null && precept.def.grantedAbilities.Count > 0)
+                {
+                    sb.AppendLine("  - " + "BLAP_EmulationAbilitiesLine".Translate(
+                        precept.def.grantedAbilities.Where(a => a != null).Select(a => a.LabelCap.Resolve()).ToCommaList()));
+                }
+                return sb.ToString().TrimEndNewlines();
+            }
+        }
 
         public override void ExposeData()
         {

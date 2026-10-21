@@ -6,6 +6,7 @@
 - 依赖：Ideology（必须）、brrainz.harmony（必须，本机 workshop 2009463077 的 1.7 包，Harmony 3.0）
 - 目标：强化 Ideology 领袖（Leader）与传道者（Moralist）
 - 构建：`Source/dotnet build`（.NET SDK 10.0.402，net10.0，输出到 `1.7/Assemblies/`）
+- **部署（固定规则）**：每次修改并编译通过后，运行 `powershell -NoProfile -File tools/deploy.ps1`，把整个工程镜像到 `D:\Steam\steamapps\common\RimWorld\Mods\better_leader_and_preacher`（排除 .git/bin/obj/.vs）
 - 开发阶段：首个版本已产出，**游戏内验证未做**
 
 ## 功能块
