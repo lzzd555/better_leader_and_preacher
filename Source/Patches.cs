@@ -173,21 +173,15 @@ namespace BLAP
                 if (!AbilityCache.TryGetValue(pawn.thingIDNumber, out var cached) || cached.Key != emulated.def.defName)
                 {
                     var fresh = new Dictionary<AbilityDef, Ability>();
-                    var skipped = new List<string>();
                     foreach (var def in emulated.def.grantedAbilities)
                     {
                         if (def == null) continue;
-                        if (def.requiredMemes != null && pawn.Ideo != null &&
-                            !def.requiredMemes.All(m => pawn.Ideo.memes.Contains(m)))
-                        {
-                            skipped.Add(def.defName + "(meme不符)");
-                            continue;
-                        }
+                        // 与真指派一致：职位路径（FillOrUpdateAbilityList）授能力不做 meme 检查；
+                        // 原版 getter 的 requiredMemes 过滤只针对血红(hediff)授予的能力，不适用于兼任
                         fresh[def] = AbilityUtility.MakeAbility(def, pawn, emulated);
                     }
                     Log.Message($"[BetterLeaderAndPreacher] 兼任能力构建：{emulated.def.defName} 授予 " +
-                                $"{fresh.Count} 项（{string.Join(", ", fresh.Keys.Select(d => d.defName))}）" +
-                                (skipped.Count > 0 ? $"，跳过 {skipped.Count} 项（{string.Join(", ", skipped)}）" : ""));
+                                $"{fresh.Count} 项（{string.Join(", ", fresh.Keys.Select(d => d.defName))}）");
                     cached = new KeyValuePair<string, Dictionary<AbilityDef, Ability>>(emulated.def.defName, fresh);
                     AbilityCache[pawn.thingIDNumber] = cached;
                 }

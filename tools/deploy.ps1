@@ -6,12 +6,17 @@
 $src = $PSScriptRoot | Split-Path
 $dst = "D:\Steam\steamapps\common\RimWorld\Mods\better_leader_and_preacher"
 
+if (Get-Process -Name "RimWorld" -ErrorAction SilentlyContinue) {
+    Write-Host "RimWorld is RUNNING - the game locks mod DLLs. Close the game first, then redeploy." -ForegroundColor Yellow
+    exit 2
+}
+
 if (-not (Test-Path $dst)) { New-Item -ItemType Directory -Path $dst | Out-Null }
 
-# /MIR mirror; /XD excluded dirs; /XF excluded files
-robocopy $src $dst /MIR /XD .git bin obj .vs /XF *.pdb *.user | Out-Null
+# /MIR mirror; /XD excluded dirs; /XF excluded files; /R:1 /W:1 = fail fast on locked files
+robocopy $src $dst /MIR /R:1 /W:1 /XD .git bin obj .vs /XF *.pdb *.user | Out-Null
 if ($LASTEXITCODE -ge 8) {
-    Write-Host "DEPLOY FAILED (robocopy exit code $LASTEXITCODE)" -ForegroundColor Red
+    Write-Host "DEPLOY FAILED (robocopy exit code $LASTEXITCODE - file locked or IO error)" -ForegroundColor Red
     exit 1
 }
 Write-Host "Deployed to $dst (robocopy exit $LASTEXITCODE, <8 means success)" -ForegroundColor Green
