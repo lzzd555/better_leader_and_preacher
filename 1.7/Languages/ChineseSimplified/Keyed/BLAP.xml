@@ -9,6 +9,7 @@
   <BLAP_EmulationBonusHeader>兼任加成：</BLAP_EmulationBonusHeader>
   <BLAP_EmulationAbilitiesLine>能力：{0}</BLAP_EmulationAbilitiesLine>
   <BLAP_EmulateInactive>（未激活）</BLAP_EmulateInactive>
+  <BLAP_EmulateRequirement>（要求：{0}）</BLAP_EmulateRequirement>
 <BLAP_EmulateMenuTitle>选择要兼任的专家职位</BLAP_EmulateMenuTitle>
   <BLAP_EmulateOption>兼任：{0}</BLAP_EmulateOption>
   <BLAP_EmulateCurrent>兼任：{0}（当前）</BLAP_EmulateCurrent>

@@ -89,6 +89,13 @@ namespace BLAP
                     // 未激活的专家也展示出来（灰显+标注），便于玩家看清为什么不能选
                     options.Add(new FloatMenuOption(label + " " + "BLAP_EmulateInactive".Translate(), null));
                 }
+                else if (!role.RequirementsMet(pawn))
+                {
+                    // 与真指派一致的要求检查（技能/性别/儿童等），未达标灰显并标注原因
+                    var unmet = role.GetFirstUnmetRequirement(pawn);
+                    string req = unmet != null ? unmet.GetLabelCap(role) : "";
+                    options.Add(new FloatMenuOption(label + " " + "BLAP_EmulateRequirement".Translate(req), null));
+                }
                 else if (isCurrent)
                 {
                     options.Add(new FloatMenuOption(label, null));

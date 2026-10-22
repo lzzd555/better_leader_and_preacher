@@ -9,6 +9,7 @@
   <BLAP_EmulationBonusHeader>Emulation bonuses:</BLAP_EmulationBonusHeader>
   <BLAP_EmulationAbilitiesLine>Abilities: {0}</BLAP_EmulationAbilitiesLine>
   <BLAP_EmulateInactive>(inactive)</BLAP_EmulateInactive>
+  <BLAP_EmulateRequirement>(requires: {0})</BLAP_EmulateRequirement>
 <BLAP_EmulateMenuTitle>Choose a specialist role to emulate</BLAP_EmulateMenuTitle>
   <BLAP_EmulateOption>Emulate {0}</BLAP_EmulateOption>
   <BLAP_EmulateCurrent>Emulate {0} (current)</BLAP_EmulateCurrent>
