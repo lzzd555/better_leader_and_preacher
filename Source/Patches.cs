@@ -205,6 +205,7 @@ namespace BLAP
             {
                 pawn.health.RemoveHediff(marker);
                 AbilityCache.Remove(pawn.thingIDNumber);
+                pawn.abilities.Notify_TemporaryAbilitiesChanged();
             }
         }
     }
@@ -231,6 +232,7 @@ namespace BLAP
             if (marker != null && !RoleHelper.HoldsLeaderOrMoralist(p))
             {
                 p.health.RemoveHediff(marker);
+                p.abilities.Notify_TemporaryAbilitiesChanged();
             }
         }
     }
