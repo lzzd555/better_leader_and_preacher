@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace BLAP
 {
-    /// <summary>领袖坚韧：疼痛 x0.9，受到伤害 x0.8。</summary>
+    /// <summary>领袖坚韧：疼痛偏移 -10%（减法，封底 0），受到伤害 x0.8。</summary>
     [HarmonyPatch(typeof(HediffSet), "get_PainTotal")]
     public static class Patch_LeaderPain
     {
@@ -18,7 +18,7 @@ namespace BLAP
             if (__result <= 0f) return;
             var pawn = __instance.pawn;
             if (pawn == null || !RoleHelper.HoldsLeader(pawn)) return;
-            __result *= BLAPSettings.LeaderPainFactor;
+            __result = Mathf.Max(__result - BLAPSettings.LeaderPainOffset, 0f);
         }
     }
 

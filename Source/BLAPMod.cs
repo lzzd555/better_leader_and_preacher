@@ -46,7 +46,7 @@ namespace BLAP
 
     public static class BLAPSettings
     {
-        public const float LeaderPainFactor = 0.9f;
+        public const float LeaderPainOffset = 0.1f;   // 疼痛偏移 -10%（减法，封底 0）
         public const float LeaderDamageFactor = 0.8f;
         public const int EmulationCooldownTicks = 420000; // 7 游戏日
     }
