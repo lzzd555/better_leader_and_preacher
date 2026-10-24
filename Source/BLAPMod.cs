@@ -32,7 +32,8 @@ namespace BLAP
                     Log.Error($"[BetterLeaderAndPreacher] 补丁类 {type.Name} 应用失败：{e.Message}");
                 }
             }
-            Log.Message($"[BetterLeaderAndPreacher] 已加载。补丁 {ok} 成功 / {failed} 失败。");
+            Log.Message($"[BetterLeaderAndPreacher] 已加载。补丁 {ok} 成功 / {failed} 失败。" +
+                        $"设置：继承工作禁用 = {Settings.emulationInheritsDisabledWork}（存档若保存过旧值则以存档为准）");
         }
 
         public override void WriteSettings()

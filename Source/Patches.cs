@@ -210,16 +210,26 @@ namespace BLAP
         }
     }
 
-    /// <summary>兼任工作禁用的公共判定（可配置，默认开启）。</summary>
+    /// <summary>兼任工作禁用的公共判定（可配置，默认开启）。带一次性调试日志。</summary>
     internal static class EmulationWorkBlocker
     {
+        private static readonly HashSet<string> LoggedDecisions = new HashSet<string>();
+
         public static bool Blocks(Pawn pawn, WorkTags tags)
         {
-            if (BetterLeaderAndPreacherMod.Settings == null ||
-                !BetterLeaderAndPreacherMod.Settings.emulationInheritsDisabledWork) return false;
-            var emulated = RoleHelper.EmulatedRole(pawn);
-            if (emulated == null) return false;
-            return (emulated.def.roleDisabledWorkTags & tags) != 0;
+            bool settingOn = BetterLeaderAndPreacherMod.Settings != null &&
+                             BetterLeaderAndPreacherMod.Settings.emulationInheritsDisabledWork;
+            var emulated = settingOn ? RoleHelper.EmulatedRole(pawn) : null;
+            WorkTags roleTags = emulated?.def.roleDisabledWorkTags ?? WorkTags.None;
+            bool result = settingOn && emulated != null && (roleTags & tags) != 0;
+            // 调试：每个 (pawn, tags) 组合只打一次，避免刷屏
+            if (LoggedDecisions.Add($"{pawn?.thingIDNumber}:{tags}"))
+            {
+                Log.Message($"[BetterLeaderAndPreacher] 工作禁用判定：{pawn?.LabelShortCap ?? "?"} 查询 {tags} -> " +
+                            $"{(result ? "禁用" : "放行")}（设置开关={settingOn}，兼任={emulated?.def.defName ?? "无"}，" +
+                            $"职位禁用标签={roleTags}）");
+            }
+            return result;
         }
     }
 
