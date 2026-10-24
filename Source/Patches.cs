@@ -310,13 +310,13 @@ namespace BLAP
         }
     }
 
-    /// <summary>GetDisabledWorkTypes 是游戏自己维护的"被禁用工作类型"权威数据源，
-    /// 工作清单灰显、悬停原因等都消费它。让被兼任职位的禁用项进入该列表，
-    /// 所有界面按原版逻辑跟随。迭代器补丁必须全惰性：postfix 内绝不枚举原序列。</summary>
+    /// <summary>GetDisabledWorkTypes 返回真 List（内部经 FillList 局部函数构建），
+    /// 消费方（SkillRecord/工作栏）按 ICollection 接口调用 Contains——返回值类型契约
+    /// 不可替换。因此直接在原 List 里补禁用项，不换对象、不破坏接口。</summary>
     [HarmonyPatch(typeof(Pawn), nameof(Pawn.GetDisabledWorkTypes))]
     public static class Patch_EmulationWorkTags_List
     {
-        public static void Postfix(Pawn __instance, bool permanentOnly, ref IEnumerable<WorkTypeDef> __result)
+        public static void Postfix(Pawn __instance, bool permanentOnly, ref List<WorkTypeDef> __result)
         {
             try
             {
@@ -326,31 +326,15 @@ namespace BLAP
                 if (emulated == null) return;
                 var roleTags = emulated.def.roleDisabledWorkTags;
                 if (roleTags == WorkTags.None) return;
-                var extra = DefDatabase<WorkTypeDef>.AllDefsListForReading
-                    .Where(w => (w.workTags & roleTags) != 0)
-                    .ToList();
-                if (extra.Count > 0)
+                foreach (var w in DefDatabase<WorkTypeDef>.AllDefsListForReading)
                 {
-                    __result = AppendExtras(__result, extra);
+                    if ((w.workTags & roleTags) != 0 && !__result.Contains(w))
+                        __result.Add(w);
                 }
             }
             catch (Exception e)
             {
                 Log.ErrorOnce($"[BetterLeaderAndPreacher] 工作清单补丁异常：{e.Message}", 73195006);
-            }
-        }
-
-        internal static IEnumerable<WorkTypeDef> AppendExtras(IEnumerable<WorkTypeDef> source, List<WorkTypeDef> extra)
-        {
-            var seen = new HashSet<WorkTypeDef>();
-            foreach (var w in source)
-            {
-                seen.Add(w);
-                yield return w;
-            }
-            foreach (var w in extra)
-            {
-                if (seen.Add(w)) yield return w;
             }
         }
     }
