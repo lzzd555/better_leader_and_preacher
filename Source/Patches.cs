@@ -272,20 +272,38 @@ namespace BLAP
                 if (emulated == null) return;
                 var roleTags = emulated.def.roleDisabledWorkTags;
                 if (roleTags == WorkTags.None) return;
-                var vanilla = __result.ToList();
                 var extra = DefDatabase<WorkTypeDef>.AllDefsListForReading
-                    .Where(w => (w.workTags & roleTags) != 0 && !vanilla.Contains(w))
+                    .Where(w => (w.workTags & roleTags) != 0)
                     .ToList();
                 if (extra.Count > 0)
                 {
-                    __result = vanilla.Concat(extra);
-                    Log.Message($"[BetterLeaderAndPreacher] 工作清单禁用：{__instance.LabelShortCap} " +
-                                $"兼任 {emulated.def.defName}，追加禁用 {extra.Count} 项工作类型");
+                    // 关键：postfix 内绝不枚举原迭代器（会提前耗尽它，导致调用方拿到空序列、
+                    // 并破坏其他 mod 读取的缓存状态）。改为惰性生成器：消费方枚举时原序列只走一遍，追加项去重。
+                    __result = EmulationWorkListHelper.AppendExtras(__result, extra);
+                    Log.Message($"[BetterLeaderAndPreacher] 工作清单禁用（惰性）：{__instance.LabelShortCap} " +
+                                $"兼任 {emulated.def.defName}，待追加 {extra.Count} 项工作类型");
                 }
             }
             catch (Exception e)
             {
                 Log.ErrorOnce($"[BetterLeaderAndPreacher] 工作清单补丁异常：{e.Message}", 73195006);
+            }
+        }
+    }
+
+    internal static class EmulationWorkListHelper
+    {
+        internal static IEnumerable<WorkTypeDef> AppendExtras(IEnumerable<WorkTypeDef> source, List<WorkTypeDef> extra)
+        {
+            var seen = new HashSet<WorkTypeDef>();
+            foreach (var w in source)
+            {
+                seen.Add(w);
+                yield return w;
+            }
+            foreach (var w in extra)
+            {
+                if (seen.Add(w)) yield return w;
             }
         }
     }
