@@ -1,10 +1,11 @@
-# Deploy script: mirror the whole project to the game's local Mods folder.
+# Deploy script: copy RUNTIME-ONLY mod content (About/LoadFolders/1.7) to the
+# single fixed game mod folder. That folder is both the playtest copy and the
+# workshop upload copy - keep it clean (no Source/docs/tools).
 # Usage: powershell -NoProfile -File tools/deploy.ps1
-# Rule: run after every successful build. Excludes .git / build intermediates.
 # NOTE: keep this file ASCII-only (PowerShell 5.1 reads no-BOM UTF-8 as ANSI).
 
 $src = $PSScriptRoot | Split-Path
-$dst = "D:\Steam\steamapps\common\RimWorld\Mods\better_leader_and_preacher"
+$dst = "D:\Steam\steamapps\common\RimWorld\Mods\Better Leader and Moral Guide"
 
 if (Get-Process -Name "RimWorld" -ErrorAction SilentlyContinue) {
     Write-Host "RimWorld is RUNNING - the game locks mod DLLs. Close the game first, then redeploy." -ForegroundColor Yellow
@@ -13,10 +14,12 @@ if (Get-Process -Name "RimWorld" -ErrorAction SilentlyContinue) {
 
 if (-not (Test-Path $dst)) { New-Item -ItemType Directory -Path $dst | Out-Null }
 
-# /MIR mirror; /XD excluded dirs; /XF excluded files; /R:1 /W:1 = fail fast on locked files
-robocopy $src $dst /MIR /R:1 /W:1 /XD .git bin obj .vs /XF *.pdb *.user | Out-Null
+robocopy "$src\About" "$dst\About" /MIR /R:1 /W:1 | Out-Null
+robocopy "$src\1.7" "$dst\1.7" /MIR /R:1 /W:1 | Out-Null
+Copy-Item "$src\LoadFolders.xml" "$dst\LoadFolders.xml" -Force
+
 if ($LASTEXITCODE -ge 8) {
-    Write-Host "DEPLOY FAILED (robocopy exit code $LASTEXITCODE - file locked or IO error)" -ForegroundColor Red
+    Write-Host "DEPLOY FAILED (robocopy exit code $LASTEXITCODE)" -ForegroundColor Red
     exit 1
 }
-Write-Host "Deployed to $dst (robocopy exit $LASTEXITCODE, <8 means success)" -ForegroundColor Green
+Write-Host "Deployed runtime files to $dst (robocopy exit $LASTEXITCODE, <8 means success)" -ForegroundColor Green

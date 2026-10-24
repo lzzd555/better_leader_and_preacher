@@ -243,15 +243,49 @@ namespace BLAP
         {
             try
             {
-                if (BetterLeaderAndPreacherMod.Settings == null ||
-                    !BetterLeaderAndPreacherMod.Settings.emulationInheritsDisabledWork) return;
                 var emulated = RoleHelper.EmulatedRole(__instance);
                 if (emulated == null) return;
+                // 复用 Blocks 的开关/日志出口，再把标签并入
+                if (!EmulationWorkBlocker.Blocks(__instance, emulated.def.roleDisabledWorkTags)) return;
                 __result |= emulated.def.roleDisabledWorkTags;
             }
             catch (Exception e)
             {
                 Log.ErrorOnce($"[BetterLeaderAndPreacher] 工作禁用补丁异常：{e.Message}", 73195004);
+            }
+        }
+    }
+
+    /// <summary>工作清单 UI 走 GetDisabledWorkTypes（迭代器）。补丁挂不了 MoveNext，
+    /// 用包装返回序列的方式追加被禁用的工作类型（与 gizmo 补丁同款手法）。</summary>
+    [HarmonyPatch(typeof(Pawn), nameof(Pawn.GetDisabledWorkTypes))]
+    public static class Patch_EmulationWorkTags_List
+    {
+        public static void Postfix(Pawn __instance, bool permanentOnly, ref IEnumerable<WorkTypeDef> __result)
+        {
+            try
+            {
+                if (permanentOnly || __result == null) return;
+                if (BetterLeaderAndPreacherMod.Settings == null ||
+                    !BetterLeaderAndPreacherMod.Settings.emulationInheritsDisabledWork) return;
+                var emulated = RoleHelper.EmulatedRole(__instance);
+                if (emulated == null) return;
+                var roleTags = emulated.def.roleDisabledWorkTags;
+                if (roleTags == WorkTags.None) return;
+                var vanilla = __result.ToList();
+                var extra = DefDatabase<WorkTypeDef>.AllDefsListForReading
+                    .Where(w => (w.workTags & roleTags) != 0 && !vanilla.Contains(w))
+                    .ToList();
+                if (extra.Count > 0)
+                {
+                    __result = vanilla.Concat(extra);
+                    Log.Message($"[BetterLeaderAndPreacher] 工作清单禁用：{__instance.LabelShortCap} " +
+                                $"兼任 {emulated.def.defName}，追加禁用 {extra.Count} 项工作类型");
+                }
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce($"[BetterLeaderAndPreacher] 工作清单补丁异常：{e.Message}", 73195006);
             }
         }
     }
