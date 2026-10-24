@@ -43,6 +43,8 @@ namespace BLAP
                 {
                     foreach (var effect in precept.def.roleEffects)
                     {
+                        // 武器限制是否生效取决于模组设置开关，写进 hediff 会与实际状态不符，不展示
+                        if (effect is RoleEffect_NoMeleeWeapons || effect is RoleEffect_NoRangedWeapons) continue;
                         string line = effect?.Label(pawn, precept);
                         if (!line.NullOrEmpty()) sb.AppendLine("  - " + line);
                     }
