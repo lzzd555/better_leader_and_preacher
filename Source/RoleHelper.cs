@@ -52,10 +52,12 @@ namespace BLAP
 
         /// <summary>当前兼任的专家 precept；已失效（文化变革后不存在）时返回 null。</summary>
         /// <summary>当前兼任的职位；已失效（文化变革后不存在）时返回 null。
+        /// v0.7 起兼任仅限领袖；传道者不再提供兼任入口，旧档的兼任状态会在校验时自动清除。
         /// 兼任对象是除领袖/传道者外的任意职位——模组专家（如 VIE 护士、AlphaMemes 角色）
         /// 很多是 Precept_RoleSingle 单持有者职位，不能按 RoleMulti 过滤。</summary>
         public static Precept_Role EmulatedRole(Pawn pawn)
         {
+            if (!HoldsLeader(pawn)) return null;
             var marker = EmulationMarker(pawn);
             if (marker == null || marker.EmulatedRoleDef.NullOrEmpty()) return null;
             if (pawn.Ideo == null) return null;

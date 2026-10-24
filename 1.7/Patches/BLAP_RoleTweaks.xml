@@ -17,13 +17,21 @@
     </value>
   </Operation>
 
-  <!-- 传道者：文化传播系数 x150%（主动向异文化者传教的几率） -->
+  <!-- 传道者：文化传播系数 x150%（主动传教几率）、文化动摇系数 x50%（被传教时认可度流失减半）、社交效果 x150% -->
   <Operation Class="PatchOperationAdd">
     <xpath>/Defs/PreceptDef[defName="IdeoRole_Moralist"]</xpath>
     <value>
       <roleEffects>
         <li Class="RoleEffect_PawnStatFactor">
           <statDef>SocialIdeoSpreadFrequencyFactor</statDef>
+          <modifier>1.5</modifier>
+        </li>
+        <li Class="RoleEffect_PawnStatFactor">
+          <statDef>CertaintyLossFactor</statDef>
+          <modifier>0.5</modifier>
+        </li>
+        <li Class="RoleEffect_PawnStatFactor">
+          <statDef>SocialImpact</statDef>
           <modifier>1.5</modifier>
         </li>
       </roleEffects>

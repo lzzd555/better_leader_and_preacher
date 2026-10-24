@@ -201,11 +201,32 @@ namespace BLAP
         private static void CleanupIfRoleLost(Pawn pawn)
         {
             var marker = RoleHelper.EmulationMarker(pawn);
-            if (marker != null && !RoleHelper.HoldsLeaderOrMoralist(pawn))
+            if (marker != null && !RoleHelper.HoldsLeader(pawn))
             {
                 pawn.health.RemoveHediff(marker);
                 AbilityCache.Remove(pawn.thingIDNumber);
                 pawn.abilities.Notify_TemporaryAbilitiesChanged();
+            }
+        }
+    }
+
+    /// <summary>可选：兼任继承被兼任职位的工作禁用（默认关闭，模组设置中开启）。</summary>
+    [HarmonyPatch(typeof(Pawn), "get_CombinedDisabledWorkTags")]
+    public static class Patch_EmulationWorkTags
+    {
+        public static void Postfix(Pawn __instance, ref WorkTags __result)
+        {
+            try
+            {
+                if (BetterLeaderAndPreacherMod.Settings == null ||
+                    !BetterLeaderAndPreacherMod.Settings.emulationInheritsDisabledWork) return;
+                var emulated = RoleHelper.EmulatedRole(__instance);
+                if (emulated == null) return;
+                __result |= emulated.def.roleDisabledWorkTags;
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce($"[BetterLeaderAndPreacher] 工作禁用补丁异常：{e.Message}", 73195004);
             }
         }
     }
@@ -229,7 +250,7 @@ namespace BLAP
         public static void Cleanup(Pawn p)
         {
             var marker = RoleHelper.EmulationMarker(p);
-            if (marker != null && !RoleHelper.HoldsLeaderOrMoralist(p))
+            if (marker != null && !RoleHelper.HoldsLeader(p))
             {
                 p.health.RemoveHediff(marker);
                 p.abilities.Notify_TemporaryAbilitiesChanged();

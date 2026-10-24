@@ -20,7 +20,7 @@ namespace BLAP
         public static void Postfix(Pawn __instance, ref IEnumerable<Gizmo> __result)
         {
             if (!__instance.IsColonistPlayerControlled) return;
-            if (!RoleHelper.HoldsLeaderOrMoralist(__instance)) return;
+            if (!RoleHelper.HoldsLeader(__instance)) return;
             __result = __result.Append(MakeGizmo(__instance));
             if (DebugSettings.ShowDevGizmos)
                 __result = __result.Append(MakeDevGizmo(__instance));

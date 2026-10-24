@@ -8,10 +8,13 @@ using UnityEngine;
 
 namespace BLAP
 {
-    public class BetterLeaderAndPreacherMod : Mod
+    public partial class BetterLeaderAndPreacherMod : Mod
     {
+        public static BLAPModSettings Settings;
+
         public BetterLeaderAndPreacherMod(ModContentPack content) : base(content)
         {
+            Settings = GetSettings<BLAPModSettings>();
             var harmony = new Harmony("station.BetterLeaderAndPreacher");
             // 逐类打补丁并单独捕获：一个补丁类失败不拖垮其余补丁（重 mod 环境下更稳）
             int ok = 0, failed = 0;
@@ -30,6 +33,16 @@ namespace BLAP
                 }
             }
             Log.Message($"[BetterLeaderAndPreacher] 已加载。补丁 {ok} 成功 / {failed} 失败。");
+        }
+
+        public override void WriteSettings()
+        {
+            base.WriteSettings();
+            // 工作禁用开关变化后刷新 pawn 的工作缓存相关通知
+            foreach (var pawn in PawnsFinder.AllMaps_FreeColonistsSpawned)
+            {
+                pawn.Notify_DisabledWorkTypesChanged();
+            }
         }
     }
 
