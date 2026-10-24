@@ -24,5 +24,5 @@
   <RoleRaisedExpectationGracePeriod>{1}后，{0}的期望将发生偏移。</RoleRaisedExpectationGracePeriod>
   <BLAP_SettingsInheritDisabledWork>兼任继承专家的工作禁用</BLAP_SettingsInheritDisabledWork>
   <BLAP_SettingsInheritDisabledWorkTip>开启后，领袖兼任专家职位时同时继承该职位的工作禁用（如医疗专家拒绝暴力、生产专家拒绝种田）。默认关闭：只拿数值与能力，不带限制。</BLAP_SettingsInheritDisabledWorkTip>
-  <BLAP_SettingsNote>兼任入口：选中领袖后命令栏的“兼任专家”按钮。仅领袖可用（传道者不走兼任路线）。</BLAP_SettingsNote>
+  <BLAP_SettingsNote>兼任入口：选中领袖后命令栏的“兼任专家”按钮。</BLAP_SettingsNote>
 </LanguageData>

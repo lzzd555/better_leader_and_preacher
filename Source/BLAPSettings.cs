@@ -8,11 +8,11 @@ namespace BLAP
     public class BLAPModSettings : ModSettings
     {
         /// <summary>兼任是否继承被兼任职位的工作禁用（roleDisabledWorkTags）。</summary>
-        public bool emulationInheritsDisabledWork = false;
+        public bool emulationInheritsDisabledWork = true;
 
         public override void ExposeData()
         {
-            Scribe_Values.Look(ref emulationInheritsDisabledWork, "BLAP_emulationInheritsDisabledWork", false);
+            Scribe_Values.Look(ref emulationInheritsDisabledWork, "BLAP_emulationInheritsDisabledWork", true);
             base.ExposeData();
         }
     }

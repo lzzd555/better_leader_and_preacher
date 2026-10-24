@@ -1,4 +1,4 @@
-# Better Leader and Preacher 领袖与传道者强化
+# Better Leader and Moral Guide 领袖与道德导师强化
 
 RimWorld **1.7** 模组（需 Ideology + Harmony）。让 Ideology 的领袖与传道者回归"关键时刻带头"的定位。
 
