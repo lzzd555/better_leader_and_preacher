@@ -310,6 +310,51 @@ namespace BLAP
         }
     }
 
+    /// <summary>GetDisabledWorkTypes 是游戏自己维护的"被禁用工作类型"权威数据源，
+    /// 工作清单灰显、悬停原因等都消费它。让被兼任职位的禁用项进入该列表，
+    /// 所有界面按原版逻辑跟随。迭代器补丁必须全惰性：postfix 内绝不枚举原序列。</summary>
+    [HarmonyPatch(typeof(Pawn), nameof(Pawn.GetDisabledWorkTypes))]
+    public static class Patch_EmulationWorkTags_List
+    {
+        public static void Postfix(Pawn __instance, bool permanentOnly, ref IEnumerable<WorkTypeDef> __result)
+        {
+            try
+            {
+                if (permanentOnly || __result == null) return;
+                if (!EmulationWorkBlocker.Enabled) return;
+                var emulated = RoleHelper.EmulatedRole(__instance);
+                if (emulated == null) return;
+                var roleTags = emulated.def.roleDisabledWorkTags;
+                if (roleTags == WorkTags.None) return;
+                var extra = DefDatabase<WorkTypeDef>.AllDefsListForReading
+                    .Where(w => (w.workTags & roleTags) != 0)
+                    .ToList();
+                if (extra.Count > 0)
+                {
+                    __result = AppendExtras(__result, extra);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce($"[BetterLeaderAndPreacher] 工作清单补丁异常：{e.Message}", 73195006);
+            }
+        }
+
+        internal static IEnumerable<WorkTypeDef> AppendExtras(IEnumerable<WorkTypeDef> source, List<WorkTypeDef> extra)
+        {
+            var seen = new HashSet<WorkTypeDef>();
+            foreach (var w in source)
+            {
+                seen.Add(w);
+                yield return w;
+            }
+            foreach (var w in extra)
+            {
+                if (seen.Add(w)) yield return w;
+            }
+        }
+    }
+
     /// <summary>职位被卸任时清理兼任标记。1.7 中 Precept_Role.Unassign 是抽象方法，
     /// 只能补丁两个具体子类的实现。</summary>
     [HarmonyPatch(typeof(Precept_RoleSingle), nameof(Precept_RoleSingle.Unassign))]

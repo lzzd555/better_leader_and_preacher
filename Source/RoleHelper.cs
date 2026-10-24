@@ -108,6 +108,7 @@ namespace BLAP
                 marker.lastSetTick = Find.TickManager.TicksGame;
                 // 能力缓存失效，旧的被兼任能力立即从列表消失（否则要等征召切换才刷新）
                 pawn.abilities.Notify_TemporaryAbilitiesChanged();
+                pawn.Notify_DisabledWorkTypesChanged();
                 return;
             }
             if (marker == null)
@@ -118,6 +119,7 @@ namespace BLAP
             marker.EmulatedRoleDef = role.def.defName;
             marker.lastSetTick = Find.TickManager.TicksGame;
             pawn.abilities.Notify_TemporaryAbilitiesChanged();
+            pawn.Notify_DisabledWorkTypesChanged();
         }
     }
 }
