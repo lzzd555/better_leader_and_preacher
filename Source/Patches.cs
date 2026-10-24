@@ -210,15 +210,18 @@ namespace BLAP
         }
     }
 
-    /// <summary>兼任工作禁用的公共判定（可配置，默认开启）。带一次性调试日志。</summary>
+    /// <summary>兼任职位限制（工作禁用+武器限制）的公共判定（可配置，默认开启）。带一次性调试日志。</summary>
     internal static class EmulationWorkBlocker
     {
         private static readonly HashSet<string> LoggedDecisions = new HashSet<string>();
 
+        public static bool Enabled =>
+            BetterLeaderAndPreacherMod.Settings != null &&
+            BetterLeaderAndPreacherMod.Settings.emulationInheritsDisabledWork;
+
         public static bool Blocks(Pawn pawn, WorkTags tags)
         {
-            bool settingOn = BetterLeaderAndPreacherMod.Settings != null &&
-                             BetterLeaderAndPreacherMod.Settings.emulationInheritsDisabledWork;
+            bool settingOn = Enabled;
             var emulated = settingOn ? RoleHelper.EmulatedRole(pawn) : null;
             WorkTags roleTags = emulated?.def.roleDisabledWorkTags ?? WorkTags.None;
             bool result = settingOn && emulated != null && (roleTags & tags) != 0;
@@ -230,6 +233,30 @@ namespace BLAP
                             $"职位禁用标签={roleTags}）");
             }
             return result;
+        }
+    }
+
+    /// <summary>兼任继承武器限制（RoleEffect_NoMeleeWeapons / NoRangedWeapons，
+    /// 如射击专家拒绝近战武器）。EquipmentUtility.RolePreventsFromUsing 是装备判定的
+    /// 汇总入口（选择武器、自动换装都走这里）；职位限制开关关闭时不生效。</summary>
+    [HarmonyPatch(typeof(EquipmentUtility), nameof(EquipmentUtility.RolePreventsFromUsing))]
+    public static class Patch_EmulationWeaponLimits
+    {
+        public static void Postfix(Pawn pawn, Thing thing, string reason, ref bool __result)
+        {
+            try
+            {
+                if (__result) return;
+                if (!EmulationWorkBlocker.Enabled) return;
+                var emulated = RoleHelper.EmulatedRole(pawn);
+                if (emulated == null) return;
+                // 直接调用被兼任职位的 CanEquip（第三个参数是 out 的拒绝原因文本）
+                if (!emulated.CanEquip(pawn, thing, out _)) __result = true;
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce($"[BetterLeaderAndPreacher] 武器限制补丁异常：{e.Message}", 73195007);
+            }
         }
     }
 
@@ -252,58 +279,6 @@ namespace BLAP
             catch (Exception e)
             {
                 Log.ErrorOnce($"[BetterLeaderAndPreacher] 工作禁用补丁异常：{e.Message}", 73195004);
-            }
-        }
-    }
-
-    /// <summary>工作清单 UI 走 GetDisabledWorkTypes（迭代器）。补丁挂不了 MoveNext，
-    /// 用包装返回序列的方式追加被禁用的工作类型（与 gizmo 补丁同款手法）。</summary>
-    [HarmonyPatch(typeof(Pawn), nameof(Pawn.GetDisabledWorkTypes))]
-    public static class Patch_EmulationWorkTags_List
-    {
-        public static void Postfix(Pawn __instance, bool permanentOnly, ref IEnumerable<WorkTypeDef> __result)
-        {
-            try
-            {
-                if (permanentOnly || __result == null) return;
-                if (BetterLeaderAndPreacherMod.Settings == null ||
-                    !BetterLeaderAndPreacherMod.Settings.emulationInheritsDisabledWork) return;
-                var emulated = RoleHelper.EmulatedRole(__instance);
-                if (emulated == null) return;
-                var roleTags = emulated.def.roleDisabledWorkTags;
-                if (roleTags == WorkTags.None) return;
-                var extra = DefDatabase<WorkTypeDef>.AllDefsListForReading
-                    .Where(w => (w.workTags & roleTags) != 0)
-                    .ToList();
-                if (extra.Count > 0)
-                {
-                    // 关键：postfix 内绝不枚举原迭代器（会提前耗尽它，导致调用方拿到空序列、
-                    // 并破坏其他 mod 读取的缓存状态）。改为惰性生成器：消费方枚举时原序列只走一遍，追加项去重。
-                    __result = EmulationWorkListHelper.AppendExtras(__result, extra);
-                    Log.Message($"[BetterLeaderAndPreacher] 工作清单禁用（惰性）：{__instance.LabelShortCap} " +
-                                $"兼任 {emulated.def.defName}，待追加 {extra.Count} 项工作类型");
-                }
-            }
-            catch (Exception e)
-            {
-                Log.ErrorOnce($"[BetterLeaderAndPreacher] 工作清单补丁异常：{e.Message}", 73195006);
-            }
-        }
-    }
-
-    internal static class EmulationWorkListHelper
-    {
-        internal static IEnumerable<WorkTypeDef> AppendExtras(IEnumerable<WorkTypeDef> source, List<WorkTypeDef> extra)
-        {
-            var seen = new HashSet<WorkTypeDef>();
-            foreach (var w in source)
-            {
-                seen.Add(w);
-                yield return w;
-            }
-            foreach (var w in extra)
-            {
-                if (seen.Add(w)) yield return w;
             }
         }
     }
@@ -331,30 +306,6 @@ namespace BLAP
                     __result = true;
                     return;
                 }
-            }
-        }
-    }
-
-    /// <summary>工作禁用原因文本（列表/提示用）。原方法带缓存，附加理由时用副本，不改缓存。</summary>
-    [HarmonyPatch(typeof(Pawn), nameof(Pawn.GetReasonsForDisabledWorkType))]
-    public static class Patch_EmulationWorkTags_Reasons
-    {
-        public static void Postfix(Pawn __instance, WorkTypeDef workType, ref List<string> __result)
-        {
-            try
-            {
-                if (__result == null || workType == null) return;
-                if (!EmulationWorkBlocker.Blocks(__instance, workType.workTags)) return;
-                var emulated = RoleHelper.EmulatedRole(__instance);
-                var copy = new List<string>(__result)
-                {
-                    "BLAP_EmulationWorkReason".Translate(emulated.LabelForPawn(__instance))
-                };
-                __result = copy;
-            }
-            catch (Exception e)
-            {
-                Log.ErrorOnce($"[BetterLeaderAndPreacher] 工作禁用原因补丁异常：{e.Message}", 73195005);
             }
         }
     }
