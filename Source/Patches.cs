@@ -210,9 +210,24 @@ namespace BLAP
         }
     }
 
-    /// <summary>可选：兼任继承被兼任职位的工作禁用（默认关闭，模组设置中开启）。</summary>
+    /// <summary>兼任工作禁用的公共判定（可配置，默认开启）。</summary>
+    internal static class EmulationWorkBlocker
+    {
+        public static bool Blocks(Pawn pawn, WorkTags tags)
+        {
+            if (BetterLeaderAndPreacherMod.Settings == null ||
+                !BetterLeaderAndPreacherMod.Settings.emulationInheritsDisabledWork) return false;
+            var emulated = RoleHelper.EmulatedRole(pawn);
+            if (emulated == null) return false;
+            return (emulated.def.roleDisabledWorkTags & tags) != 0;
+        }
+    }
+
+    /// <summary>兼任继承工作禁用。注意 1.7 有多条独立判定链：
+    /// WorkTagIsDisabled 走 CombinedDisabledWorkTags，而 WorkTypeIsDisabled 走
+    /// GetDisabledWorkTypes 迭代器（自己直读 roleDisabledWorkTags），必须分别拦截。</summary>
     [HarmonyPatch(typeof(Pawn), "get_CombinedDisabledWorkTags")]
-    public static class Patch_EmulationWorkTags
+    public static class Patch_EmulationWorkTags_Combined
     {
         public static void Postfix(Pawn __instance, ref WorkTags __result)
         {
@@ -227,6 +242,57 @@ namespace BLAP
             catch (Exception e)
             {
                 Log.ErrorOnce($"[BetterLeaderAndPreacher] 工作禁用补丁异常：{e.Message}", 73195004);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(Pawn), nameof(Pawn.WorkTypeIsDisabled))]
+    public static class Patch_EmulationWorkTags_WorkType
+    {
+        public static void Postfix(Pawn __instance, WorkTypeDef w, ref bool __result)
+        {
+            if (!__result && w != null && EmulationWorkBlocker.Blocks(__instance, w.workTags))
+                __result = true;
+        }
+    }
+
+    [HarmonyPatch(typeof(Pawn), nameof(Pawn.OneOfWorkTypesIsDisabled))]
+    public static class Patch_EmulationWorkTags_WorkTypeList
+    {
+        public static void Postfix(Pawn __instance, List<WorkTypeDef> wts, ref bool __result)
+        {
+            if (__result || wts == null) return;
+            foreach (var w in wts)
+            {
+                if (w != null && EmulationWorkBlocker.Blocks(__instance, w.workTags))
+                {
+                    __result = true;
+                    return;
+                }
+            }
+        }
+    }
+
+    /// <summary>工作禁用原因文本（列表/提示用）。原方法带缓存，附加理由时用副本，不改缓存。</summary>
+    [HarmonyPatch(typeof(Pawn), nameof(Pawn.GetReasonsForDisabledWorkType))]
+    public static class Patch_EmulationWorkTags_Reasons
+    {
+        public static void Postfix(Pawn __instance, WorkTypeDef workType, ref List<string> __result)
+        {
+            try
+            {
+                if (__result == null || workType == null) return;
+                if (!EmulationWorkBlocker.Blocks(__instance, workType.workTags)) return;
+                var emulated = RoleHelper.EmulatedRole(__instance);
+                var copy = new List<string>(__result)
+                {
+                    "BLAP_EmulationWorkReason".Translate(emulated.LabelForPawn(__instance))
+                };
+                __result = copy;
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce($"[BetterLeaderAndPreacher] 工作禁用原因补丁异常：{e.Message}", 73195005);
             }
         }
     }

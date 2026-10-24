@@ -36,7 +36,7 @@ namespace BLAP
 
         public override string SettingsCategory()
         {
-            return "Better Leader and Preacher";
+            return "Better Leader and Moral Guide 更好的领袖和传道者";
         }
     }
 }

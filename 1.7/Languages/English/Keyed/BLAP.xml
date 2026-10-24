@@ -23,6 +23,7 @@
   <RoleRaisedExpectation>Holding the role of {0} shifts this person's expectations.</RoleRaisedExpectation>
   <RoleRaisedExpectationGracePeriod>In {1}, the {0}'s expectations will shift.</RoleRaisedExpectationGracePeriod>
   <BLAP_SettingsInheritDisabledWork>Emulation inherits disabled work</BLAP_SettingsInheritDisabledWork>
-  <BLAP_SettingsInheritDisabledWorkTip>When on, the leader also inherits the emulated role's disabled work tags (e.g. medical specialist refuses violence). Default off: bonuses and abilities only.</BLAP_SettingsInheritDisabledWorkTip>
+  <BLAP_SettingsInheritDisabledWorkTip>When on, the leader also inherits the emulated role's disabled work tags (e.g. medical specialist refuses violence). On by default; turn off for bonuses and abilities only.</BLAP_SettingsInheritDisabledWorkTip>
   <BLAP_SettingsNote>Emulation entry: the 'Emulate specialist' command button on a selected leader.</BLAP_SettingsNote>
+  <BLAP_EmulationWorkReason>Emulating {0} (role restriction)</BLAP_EmulationWorkReason>
 </LanguageData>
