@@ -23,7 +23,8 @@
 
 ## 工坊条目（2026-10-26 已创建）
 
-- https://steamcommunity.com/sharedfiles/filedetails/?id=3825861729（私密）
+- 正式条目：https://steamcommunity.com/sharedfiles/filedetails/?id=3825861729（用户确认保留；About/PublishedFileId.txt 已绑定）
+- 待清理：重复条目 3827665747（第二次上传误建，建议用户在我的文件中删除）
 - 上传通道：游戏内置上传器（steamcmd 因平台信息服务超时放弃，详见对话记录；
   steamcmd 配置与缓存凭据保留于 D:\steamcmd 备用）
 - 更新流程：部署到 Mods\Better Leader and Moral Guide 后，游戏内上传器重复上传即自动更新该条目
