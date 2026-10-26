@@ -228,7 +228,10 @@ namespace BLAP
             // 调试：每个 (pawn, tags) 组合只打一次，避免刷屏
             if (LoggedDecisions.Add($"{pawn?.thingIDNumber}:{tags}"))
             {
-                Log.Message($"[BetterLeaderAndPreacher] 工作禁用判定：{pawn?.LabelShortCap ?? "?"} 查询 {tags} -> " +
+                // 注意：pawn 生成中途也会走到本判定，此时 LabelShortCap 会在半初始化的
+                // pawn 上炸（连带其他 mod 的标签补丁），日志只用安全字段
+                Log.Message($"[BetterLeaderAndPreacher] 工作禁用判定：#{pawn?.thingIDNumber}" +
+                            $"({pawn?.def?.defName ?? "?"}) 查询 {tags} -> " +
                             $"{(result ? "禁用" : "放行")}（设置开关={settingOn}，兼任={emulated?.def.defName ?? "无"}，" +
                             $"职位禁用标签={roleTags}）");
             }
