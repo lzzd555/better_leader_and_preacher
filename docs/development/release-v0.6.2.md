@@ -20,3 +20,10 @@
 
 - 无工坊预览图（Preview.png）——首次上传后可在工坊页面补充
 - 长时运行/存档跨版本升级（卸载 mod 后兼任 hediff 残留）未系统测试
+
+## 工坊条目（2026-10-26 已创建）
+
+- https://steamcommunity.com/sharedfiles/filedetails/?id=3825861729（私密）
+- 上传通道：游戏内置上传器（steamcmd 因平台信息服务超时放弃，详见对话记录；
+  steamcmd 配置与缓存凭据保留于 D:\steamcmd 备用）
+- 更新流程：部署到 Mods\Better Leader and Moral Guide 后，游戏内上传器重复上传即自动更新该条目
